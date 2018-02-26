@@ -1,4 +1,4 @@
-./node_modules/shapefile/bin/shp2json 25SEE250GC_SIR.shp -o pb.json   ´´   conversão shp para json
+﻿./node_modules/shapefile/bin/shp2json 25SEE250GC_SIR.shp -o pb.json   ´´   conversão shp para json
 
 less pb.json   ´´   ler arquivo
 
@@ -61,4 +61,10 @@ segundo mapa:
 
 ./node_modules/ndjson-cli/ndjson-split 'd.features' < br-ortho.jsongeoproject > br-ortho.ndjson
 
-./node_modules/d3-dsv/bin/dsv2json --input-encoding latin1 -r ';' -n < ndicedeDesenvolvimentodaEducaoBsicaIdebAnosIniciaisdoEnsinoFundamental.csv > br-censo.ndjson
+./node_modules/d3-dsv/bin/dsv2json --input-encoding latin1 -r ';' -n < indiceDesenvolvimento.csv > br-censo.ndjson
+
+./node_modules/ndjson-cli/ndjson-map 'd.CódigoIBGE = d.properties.CD_GEOCODI, d' < br-ortho.ndjson > br-saida-ortho-sector.ndjson
+
+./node_modules/ndjson-cli/ndjson-join 'd.CódigoIBGE' br-saida-ortho-sector.ndjson br-censo.ndjson > br-join.ndjson
+
+./node_modules/ndjson-cli/ndjson-map 'd[0].properties = {indice: Number(d[1].2009.replace(",", "."))}, d[0]' < br-join.ndjson > br-ortho-com-dado.ndjson
