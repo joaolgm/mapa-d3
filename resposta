@@ -1,0 +1,56 @@
+./node_modules/shapefile/bin/shp2json 25SEE250GC_SIR.shp -o pb.json   ´´   conversão shp para json
+
+less pb.json   ´´   ler arquivo
+
+./node_modules/d3-geo-projection/bin/geoproject 'd3.geoOrthographic().rotate([54, 14, -2]).fitSize([1000, 600], d)' < pb.json > pb-ortho.json   ´´   projeta o json
+
+./node_modules/d3-geo-projection/bin/geo2svg > -w 1000 > -h 600 >   < pb-ortho.json >   > pb-ortho.svg   ´´   conversão para svg
+
+./node_modules/ndjson-cli/ndjson-split 'd.features' < pb-ortho.jsongeoproject > pb-ortho.ndjson
+   ´´   transformou em ndjson
+
+./node_modules/d3-dsv/bin/dsv2json --input-encoding latin1 -r ';' -n < Basico_PB.csv > pb-censo.ndjson   ´´   colocou os dados do csv no ndjson
+
+./node_modules/ndjson-cli/ndjson-map 'd.Cod_setor = d.properties.CD_GEOCODI, d' < pb-ortho.ndjson > saida-ortho-sector.ndjson   ´´   pre-processa o ndjson
+
+./node_modules/ndjson-cli/ndjson-join 'd.Cod_setor' saida-ortho-sector.ndjson pb-censo.ndjson > pb-join.ndjson   ´´   junta a geometria com os dados
+
+./node_modules/ndjson-cli/ndjson-map 'd[0].properties = {renda: Number(d[1].V005.replace(",", "."))}, d[0]' < pb-join.ndjson > pb-ortho-com-dado.ndjson   ´´   isola alguma informação para o ndjson
+
+./node_modules/topojson/node_modules/topojson-server/bin/geo2topo -n tracts=pb-ortho-com-dado.ndjson > pb-tracts-topo.json   ´´   transforma ndjson para topojson para diminuir mb
+
+./node_modules/topojson/node_modules/topojson-simplify/bin/toposimplify -p 1 -f < pb-tracts-topo.json | ./node_modules/topojson/node_modules/topojson-client/bin/topoquantize 1e5 > pb-quantized-topo.json   ´´   diminuir ainda mais o arquivo
+
+./node_modules/topojson/node_modules/topojson-client/bin/topo2geo tracts=- < pb-quantized-topo.json | ./node_modules/ndjson-cli/ndjson-map -r d3 'z = d3.scaleSequential(d3.interpolateViridis).domain([0, 1e3]), d.features.forEach(f => f.properties.fill = z(f.properties.renda)), d' | ./node_modules/ndjson-cli/ndjson-split 'd.features' | ./node_modules/d3-geo-projection/bin/geo2svg -n --stroke none -w 1000 -h 600 > pb-tracts-threshold-light.svg   ´´   gerando o svg
+
+
+------------------------------------
+
+testes:
+
+./node_modules/topojson/node_modules/topojson-client/bin/topo2geo tracts=- < pb-quantized-topo.json | ./node_modules/ndjson-cli/ndjson-map -r d3 -r d3=d3-scale-chromatic 'z = d3.scaleThreshold().domain([0, 100, 300, 500, 1000, 9000]).range(d3.schemePuBu[5]), d.features.forEach(f => f.properties.fill = z(f.properties.renda)), d' | ./node_modules/ndjson-cli/ndjson-split 'd.features' | ./node_modules/d3-geo-projection/bin/geo2svg -n --stroke none -w 1000 -h 600 > pb-test2.svg
+
+
+-------------------------------------
+
+segundo mapa:
+
+./node_modules/shapefile/bin/shp2json 25SEE250GC_SIR.shp -o pb2.json
+
+./node_modules/d3-geo-projection/bin/geoproject 'd3.geoOrthographic().rotate([54, 14, -2]).fitSize([1000, 600], d)' < pb2.json > pb-ortho2.jsongeoproject
+
+./node_modules/ndjson-cli/ndjson-split 'd.features' < pb-ortho2.jsongeoproject > pb-ortho2.ndjson
+
+./node_modules/d3-dsv/bin/dsv2json --input-encoding latin1 -r ';' -n < Domicilio01_PB.csv > pb-censo2.ndjson
+
+./node_modules/ndjson-cli/ndjson-map 'd.Cod_setor = d.properties.CD_GEOCODI, d' < pb-ortho2.ndjson > saida-ortho-sector2.ndjson
+
+./node_modules/ndjson-cli/ndjson-join 'd.Cod_setor' saida-ortho-sector2.ndjson pb-censo2.ndjson > pb-join2.ndjson
+
+./node_modules/ndjson-cli/ndjson-map 'd[0].properties = {renda: Number(d[1].V008.replace(",", "."))}, d[0]' < pb-join2.ndjson > pb-ortho-com-dado2.ndjson
+
+./node_modules/topojson/node_modules/topojson-server/bin/geo2topo -n tracts=pb-ortho-com-dado2.ndjson > pb-tracts-topo2.json
+
+./node_modules/topojson/node_modules/topojson-simplify/bin/toposimplify -p 1 -f < pb-tracts-topo2.json | ./node_modules/topojson/node_modules/topojson-client/bin/topoquantize 1e5 > pb-quantized-topo2.json
+
+./node_modules/topojson/node_modules/topojson-client/bin/topo2geo tracts=- < pb-quantized-topo2.json | ./node_modules/ndjson-cli/ndjson-map -r d3 'z = d3.scaleSequential(d3.interpolateViridis).domain([0, 100]), d.features.forEach(f => f.properties.fill = z(f.properties.renda)), d' | ./node_modules/ndjson-cli/ndjson-split 'd.features' | ./node_modules/d3-geo-projection/bin/geo2svg -n --stroke none -w 1000 -h 600 > pb-tracts-threshold-light2.svg
