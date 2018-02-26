@@ -54,3 +54,11 @@ segundo mapa:
 ./node_modules/topojson/node_modules/topojson-simplify/bin/toposimplify -p 1 -f < pb-tracts-topo2.json | ./node_modules/topojson/node_modules/topojson-client/bin/topoquantize 1e5 > pb-quantized-topo2.json
 
 ./node_modules/topojson/node_modules/topojson-client/bin/topo2geo tracts=- < pb-quantized-topo2.json | ./node_modules/ndjson-cli/ndjson-map -r d3 'z = d3.scaleSequential(d3.interpolateViridis).domain([0, 100]), d.features.forEach(f => f.properties.fill = z(f.properties.renda)), d' | ./node_modules/ndjson-cli/ndjson-split 'd.features' | ./node_modules/d3-geo-projection/bin/geo2svg -n --stroke none -w 1000 -h 600 > pb-tracts-threshold-light2.svg
+
+------------------------------------------
+
+./node_modules/d3-geo-projection/bin/geoproject 'd3.geoOrthographic().rotate([54, 14, -2]).fitSize([1000, 600], d)' < geo1-br_municipios_projetado.json > br-ortho.jsongeoproject
+
+./node_modules/ndjson-cli/ndjson-split 'd.features' < br-ortho.jsongeoproject > br-ortho.ndjson
+
+./node_modules/d3-dsv/bin/dsv2json --input-encoding latin1 -r ';' -n < ndicedeDesenvolvimentodaEducaoBsicaIdebAnosIniciaisdoEnsinoFundamental.csv > br-censo.ndjson
